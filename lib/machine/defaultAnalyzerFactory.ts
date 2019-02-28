@@ -30,6 +30,7 @@ import { Mongo } from "../element/mongo/spec";
 import { EmulateTravisBuildInterpreter } from "../element/travis/EmulateTravisBuildInterpreter";
 import { travisScanner } from "../element/travis/travisScanner";
 import { AnalyzerFactory } from "./machine";
+import { SonarQubeInterpreter } from "../element/sonar/SonarQubeInterpreter";
 
 /**
  * Default analyzer factory
@@ -46,6 +47,7 @@ export const defaultAnalyzerFactory: AnalyzerFactory = sdm =>
         .withScanner(k8sScanner)
         .withScanner(travisScanner)
         .withScanner(preferencesScanner)
+        .withInterpreter(new SonarQubeInterpreter())
         .withInterpreter(new DockerBuildInterpreter())
         .withInterpreter(new EmulateTravisBuildInterpreter())
         .withInterpreter(new K8sDeployInterpreter())

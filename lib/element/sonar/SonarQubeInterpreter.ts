@@ -2,6 +2,9 @@ import { CodeInspectionRegisteringInterpreter, Interpretation } from "@atomist/s
 import { AutoInspectRegistration, SdmContext } from "@atomist/sdm";
 import { sonarQubeReviewer, SonarQubeSupportOptions } from "./sonarQubeReviewer";
 
+/**
+ * Perform SonarQube scanning.
+ */
 export class SonarQubeInterpreter implements CodeInspectionRegisteringInterpreter {
 
     public readonly codeInspections: Array<AutoInspectRegistration<any, any>>;

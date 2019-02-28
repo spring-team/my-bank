@@ -22,7 +22,7 @@ import {
 } from "@atomist/automation-client";
 import {
     AutoCodeInspection,
-    ReviewerRegistration, ReviewListenerRegistration,
+    ReviewerRegistration, ReviewListenerRegistration, spawnAndLog, spawnLog,
     StringCapturingProgressLog,
     ToDefaultBranch,
 } from "@atomist/sdm";
@@ -45,6 +45,8 @@ export interface SonarQubeSupportOptions {
     reviewListeners?: ReviewListenerRegistration | ReviewListenerRegistration[];
 }
 
+const SonarProjectPropertiesPath = "sonar-project.properties";
+
 /**
  * Add a temporary Sonar Qube project file to the project before invoking sonar-scanner
  * @param {SonarQubeSupportOptions} options
@@ -58,35 +60,52 @@ export function sonarQubeReviewer(options: SonarQubeSupportOptions): ReviewerReg
             if (!isLocalProject(project)) {
                 throw new Error(`Can only perform review on local project: had ${project.id.url}`);
             }
-            const command = [options.command || "sonar-scanner"];
+            const command = options.command || "sonar-scanner";
+            const args = [];
 
-            // Put in the temporary project properties file
-            await project.addFile(
-                "sonar-project.properties",
-                await sonarProjectProperties(project));
+            if (!await project.hasFile(SonarProjectPropertiesPath)) {
+                // Put in the temporary project properties file
+                await project.addFile(
+                    SonarProjectPropertiesPath,
+                    await sonarProjectProperties(project));
+            } else {
+                logger.info("Using existing %s file for project at %s", SonarProjectPropertiesPath, project.id.url);
+            }
 
-            command.push(`-Dsonar.host.url=${options.url || "https://localhost:9000"}`);
+            args.push(`-Dsonar.host.url=${options.url || "https://localhost:9000"}`);
 
             if (options.org) {
-                command.push(`-Dsonar.organization=${options.org}`);
+                args.push(`-Dsonar.organization=${options.org}`);
             }
             if (options.token) {
-                command.push(`-Dsonar.login=${options.token}`);
+                args.push(`-Dsonar.login=${options.token}`);
             }
 
             const log = new StringCapturingProgressLog();
-            await spawnAndWatch(
-                asSpawnCommand(command.join(" ")),
+            const r = await spawnLog(
+                command,
+                args,
                 {
                     cwd: project.baseDir,
+                    log,
                 },
-                log,
             );
-            await pli.addressChannels(`Code review success`);
-            logger.info(log.log);
-            const parsed = Pattern.exec(log.log);
-            await pli.addressChannels(`Analysis will be available at ${parsed[0]}`);
+            if (r.code === 0) {
+                await pli.addressChannels(`Code review success`);
+                logger.info(log.log);
+                const parsed = SonarQubeAnalysisPattern.exec(log.log);
+                if (parsed) {
+                    await pli.addressChannels(`Analysis will be available at ${parsed[0]}`);
+                    return {
+                        repoId: project.id,
+                        comments: [],
+                    };
+                }
+            }
 
+            await pli.addressChannels(`:skull: Code review failure`);
+            logger.error("Error from sonar-scanner (code %d):\n%s", r.code, log.log);
+            await pli.addressChannels("```" + log.log + "```");
             return {
                 repoId: project.id,
                 comments: [],
@@ -96,12 +115,12 @@ export function sonarQubeReviewer(options: SonarQubeSupportOptions): ReviewerReg
 }
 
 // ANALYSIS SUCCESSFUL, you can browse https://sonarcloud.io/dashboard/index/com.atomist.springteam:spring-rest-seed
-const Pattern = /ANALYSIS SUCCESSFUL, you can browse ([^\s^[]*)/;
+const SonarQubeAnalysisPattern = /ANALYSIS SUCCESSFUL, you can browse ([^\s^[]*)/;
 
 async function sonarProjectProperties(p: Project): Promise<string> {
     // tslint:disable
     return `# must be unique in a given SonarQube instance
-sonar.projectKey=${p.id.owner}:${p.id.owner}
+sonar.projectKey=${p.id.owner}:${p.id.repo}
 
 # this is the name and version displayed in the SonarQube UI. Was mandatory prior to SonarQube 6.1.
 # sonar.projectName=My project
@@ -109,7 +128,7 @@ sonar.projectKey=${p.id.owner}:${p.id.owner}
  
 # Path is relative to the sonar-project.properties file. Replace "\\" by "/" on Windows.
 # This property is optional if sonar.modules is set. 
-sonar.sources=.
+sonar.sources=lib
  
 # Encoding of the source code. Default is default system encoding
 #sonar.sourceEncoding=UTF-8

@@ -63,16 +63,23 @@ export function sonarQubeReviewer(options: SonarQubeSupportOptions): ReviewerReg
             const command = options.command || "sonar-scanner";
             const args = [];
 
-            if (!await project.hasFile(SonarProjectPropertiesPath)) {
-                // Put in the temporary project properties file
-                await project.addFile(
-                    SonarProjectPropertiesPath,
-                    await sonarProjectProperties(project));
-            } else {
-                logger.info("Using existing %s file for project at %s", SonarProjectPropertiesPath, project.id.url);
-            }
+            // if (!await project.hasFile(SonarProjectPropertiesPath)) {
+            //     // Put in the temporary project properties file
+            //     await project.addFile(
+            //         SonarProjectPropertiesPath,
+            //         await sonarProjectProperties(project));
+            // } else {
+            //     logger.info("Using existing %s file for project at %s", SonarProjectPropertiesPath, project.id.url);
+            // }
 
-            args.push(`-Dsonar.host.url=${options.url || "https://localhost:9000"}`);
+            args.push(`-Dsonar.host.url=${options.url || "http://localhost:9000"}`);
+
+            // TODO need to calculate this properly
+            const sources = "lib";
+
+            args.push(`sonar.sources=${sources}`);
+            // TODO where to we get them from
+            args.push(`sonar.exclusions=**/*.js,**/*.d.ts`);
 
             if (options.org) {
                 args.push(`-Dsonar.organization=${options.org}`);
@@ -80,6 +87,9 @@ export function sonarQubeReviewer(options: SonarQubeSupportOptions): ReviewerReg
             if (options.token) {
                 args.push(`-Dsonar.login=${options.token}`);
             }
+
+            // TODO do we need th owner?
+            args.push(`sonar.projectKey=${project.id.owner}:${project.id.repo}`);
 
             const log = new StringCapturingProgressLog();
             const r = await spawnLog(

@@ -31,6 +31,8 @@ import { EmulateTravisBuildInterpreter } from "../element/travis/EmulateTravisBu
 import { travisScanner } from "../element/travis/travisScanner";
 import { AnalyzerFactory } from "./machine";
 import { SonarQubeInterpreter } from "../element/sonar/SonarQubeInterpreter";
+import { lambdaSamStackSupport } from "../element/lambda/sam/lambdaSamStackSupport";
+import { defaultAwsCredentialsResolver } from "../element/lambda/lambdaCommands";
 
 /**
  * Default analyzer factory
@@ -42,6 +44,7 @@ export const defaultAnalyzerFactory: AnalyzerFactory = sdm =>
         .withStack(nodeStackSupport({
             configureTestGoal: g => g.withService(Mongo),
         }))
+        .withStack(lambdaSamStackSupport(defaultAwsCredentialsResolver))
         .withScanner(springBootScanner)
         .withScanner(dockerScanner)
         .withScanner(k8sScanner)

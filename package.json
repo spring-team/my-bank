@@ -44,6 +44,7 @@
     "@types/package-json": "^4.0.1",
     "@types/request": "^2.48.1",
     "@types/yamljs": "^0.2.30",
+    "aws-sdk": "^2.411.0",
     "fs-extra": "^7.0.1",
     "git-url-parse": "^11.1.2",
     "lodash": "^4.17.11",

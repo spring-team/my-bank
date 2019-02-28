@@ -53,11 +53,8 @@ export interface SonarQubeSupportOptions {
 export function sonarQubeReviewer(options: SonarQubeSupportOptions): ReviewerRegistration {
     return {
         name: "SonarQube review",
-       // pushTest: ToDefaultBranch,
+        pushTest: ToDefaultBranch,
         inspection: async (project, pli) => {
-
-            console.log("SONAR QUBE !!!!");
-
             if (!isLocalProject(project)) {
                 throw new Error(`Can only perform review on local project: had ${project.id.url}`);
             }

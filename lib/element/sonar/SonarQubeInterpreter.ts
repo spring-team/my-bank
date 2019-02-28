@@ -1,11 +1,8 @@
 import { CodeInspectionRegisteringInterpreter, Interpretation } from "@atomist/sdm-pack-analysis";
 import { AutoInspectRegistration, SdmContext } from "@atomist/sdm";
 import { sonarQubeReviewer, SonarQubeSupportOptions } from "./sonarQubeReviewer";
-import { configurationValue } from "@atomist/automation-client";
 
 export class SonarQubeInterpreter implements CodeInspectionRegisteringInterpreter {
-
-    private readonly options: SonarQubeSupportOptions;
 
     public readonly codeInspections: Array<AutoInspectRegistration<any, any>>;
 
@@ -15,8 +12,7 @@ export class SonarQubeInterpreter implements CodeInspectionRegisteringInterprete
         return true;
     }
 
-    constructor() {
-        this.options = configurationValue("sdm.sonar");
+    constructor(private readonly options: SonarQubeSupportOptions) {
         this.codeInspections = [sonarQubeReviewer(this.options)];
     }
 }

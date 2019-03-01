@@ -37,10 +37,7 @@ export interface StagedDeployment {
 }
 
 /**
- * Create an alias from $LATEST
- * @param {AwsCredentialsResolver} credResolver
- * @param {string} alias
- * @return {Goal}
+ * Create an alias from $LATEST for all functions in this stack
  */
 export function lambdaAliasGoal(credResolver: AwsCredentialsResolver,
                                 stage: StagedDeployment,
@@ -61,17 +58,20 @@ export function lambdaAliasGoal(credResolver: AwsCredentialsResolver,
             if (!lambda) {
                 throw new Error(`Not a lambda project: ${p.id.url}`);
             }
-            const info = await deployedFunctionInfo(creds, lambda.functionName);
-            if (!info) {
-                throw new Error(`Can't find deployment info for lambda project: ${p.id.url}`);
+
+            for (const func of lambda.functions) {
+                const info = await deployedFunctionInfo(creds, func.name);
+                if (!info) {
+                    throw new Error(`Can't find deployment info for lambda project: ${p.id.url}`);
+                }
+                const version = await publishVersion(await credResolver(gi), { FunctionName: func.name });
+                const aliased = await createOrUpdateAlias(creds, {
+                    FunctionName: func.name,
+                    FunctionVersion: version.Version,
+                    Name: stage.alias,
+                });
+                await gi.addressChannels(`Promoted to \`${stage.alias}\`` + JSON.stringify(aliased));
             }
-            const version = await publishVersion(await credResolver(gi), { FunctionName: lambda.functionName });
-            const aliased = await createOrUpdateAlias(creds, {
-                FunctionName: lambda.functionName,
-                FunctionVersion: version.Version,
-                Name: stage.alias,
-            });
-            await gi.addressChannels(`Promoted to \`${stage.alias}\`` + JSON.stringify(aliased));
         });
     });
 }

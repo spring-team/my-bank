@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import { Project } from "@atomist/automation-client";
+import { logger, Project } from "@atomist/automation-client";
 import { TechnologyScanner } from "@atomist/sdm-pack-analysis";
 import { LambdaSamStack } from "./LambdaSamStack";
+import * as yaml from "yamljs";
+import { FunctionInfo } from "../LambdaStack";
 
 /**
  * Path to SAM template within repo
@@ -34,17 +36,30 @@ export const lambdaSamScanner: TechnologyScanner<LambdaSamStack> = async p => {
         return undefined;
     }
 
-    // TODO parse it with YAML parser
+    const parsed = yaml.parse(await samTemplateFile.getContent());
+
+    const functions: FunctionInfo[] = [];
+    const resources = parsed.Resources;
+
+    for (const name of Object.getOwnPropertyNames(resources)
+        .filter((r: any) => r.Type === "AWS::Serverless::Function")) {
+        const f = resources[name];
+        functions.push({
+            name,
+            runtime: f.Runtime,
+            handler: f.Handler,
+        });
+    }
 
     const stack: LambdaSamStack = {
-        // TODO this is wrong
-        // projectName: p.id.repo,
-        functionName: p.id.repo,
+        functions,
         name: "lambda",
         kind: "sam",
         tags: ["lambda", "aws", "aws-sam"],
         // TODO gather these
         referencedEnvironmentVariables: [],
     };
+
+    logger.info("Found stack %j", stack);
     return stack;
 };

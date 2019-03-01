@@ -33,10 +33,13 @@ export const atomistConfigLambdaScanner: TechnologyScanner<LambdaApiStack> = asy
         return undefined;
     }
 
+    if (1===1) throw new Error("Not implemented");
+
     const stack: LambdaApiStack = {
         kind: "api",
         // projectName: persisted.FunctionName,
-        functionName: persisted.FunctionName,
+        //functionName: persisted.FunctionName,
+        functions: [],
         persisted,
         name: "lambda",
         tags: ["lambda", "aws"],

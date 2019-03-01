@@ -31,8 +31,8 @@ export interface LambdaSamDeployOptions {
 }
 
 /**
- * Deploy using Lambda SAM. Requires AWS and SAM cli installed locally
- * and correct credentials set for them
+ * Deploy using Lambda SAM. Requires AWS and SAM CLI installed locally
+ * and correct credentials available for them
  * @return {Goal}
  */
 export function lambdaSamDeployGoal(options: LambdaSamDeployOptions): Goal {

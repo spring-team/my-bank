@@ -50,7 +50,7 @@ export const defaultAnalyzerFactory: AnalyzerFactory = sdm =>
         .withScanner(k8sScanner)
         .withScanner(travisScanner)
         .withScanner(preferencesScanner)
-        .withInterpreter(new SonarQubeInterpreter(sdm.configuration.sdm.sonar))
+        // .withInterpreter(new SonarQubeInterpreter(sdm.configuration.sdm.sonar))
         .withInterpreter(new DockerBuildInterpreter())
         .withInterpreter(new EmulateTravisBuildInterpreter())
         .withInterpreter(new K8sDeployInterpreter())

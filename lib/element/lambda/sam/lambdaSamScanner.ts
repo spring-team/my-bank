@@ -19,12 +19,17 @@ import { TechnologyScanner } from "@atomist/sdm-pack-analysis";
 import { LambdaSamStack } from "./LambdaSamStack";
 
 /**
- * Find Lambda data in Atomist lambda file
+ * Path to SAM template within repo
+ */
+const SamTemplatePath = "template.yml";
+
+/**
+ * Find Lambda data in SAM template file
  * @param {Project} p
  * @return {Promise<any>}
  */
 export const lambdaSamScanner: TechnologyScanner<LambdaSamStack> = async p => {
-    const samTemplateFile = await p.getFile("template.yml");
+    const samTemplateFile = await p.getFile(SamTemplatePath);
     if (!samTemplateFile) {
         return undefined;
     }

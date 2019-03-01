@@ -25,15 +25,19 @@ import {
     SpawnLogOptions,
 } from "@atomist/sdm";
 
-// tslint:disable
+export interface LambdaSamDeployOptions {
+    uniqueName: string;
+    bucketName: string;
+}
 
 /**
  * Deploy using Lambda SAM. Requires AWS and SAM cli installed locally
  * and correct credentials set for them
  * @return {Goal}
  */
-export function lambdaSamDeployGoal(): Goal {
+export function lambdaSamDeployGoal(options: LambdaSamDeployOptions): Goal {
     return goal({
+        uniqueName: options.uniqueName,
         displayName: "deployLambda",
     }, async gi => {
         return gi.configuration.sdm.projectLoader.doWithProject({
@@ -41,22 +45,26 @@ export function lambdaSamDeployGoal(): Goal {
             credentials: gi.credentials,
             readOnly: true,
         }, async p => {
+            // TODO what is this?
             const stackName = p.id.repo;
-            // TODO what about the bucket?? and consider S3 prefix
-            const s3Bucket = "com.atomist.hello";
-            // TODO strip path
-            const packageCommand = `/Users/rodjohnson/Library/Python/3.7/bin/sam package --template-file template.yml --s3-bucket ${s3Bucket} --output-template-file packaged-template.yml`;
-            const deployCommand = `/Users/rodjohnson/Library/Python/3.7/bin/sam deploy --template-file packaged-template.yml --stack-name ${stackName} --capabilities CAPABILITY_IAM`;
-            const cmd1 = asSpawnCommand(packageCommand);
-            const cmd2 = asSpawnCommand(deployCommand);
+            const packageArgs = `package --template-file template.yml --s3-bucket ${
+                options.bucketName} --output-template-file packaged-template.yml`.split(" ");
+            const deployArgs = `deploy --template-file packaged-template.yml --stack-name ${
+                stackName} --capabilities CAPABILITY_IAM`.split(" ");
 
             const opts: SpawnLogOptions = { log: gi.progressLog, cwd: (p as LocalProject).baseDir };
 
-            // TODO handle error responses, need to parse them
-            await spawnLog(cmd1.command, cmd1.args, opts);
-            await spawnLog(cmd2.command, cmd2.args, opts);
-
+            const packageResult = await spawnLog("sam", packageArgs, opts);
+            if (packageResult.code !== 0) {
+                await gi.addressChannels(`:skull: Failed to package Lambda for ${p.id.url}`);
+                return packageResult;
+            }
+            const deployResult = await spawnLog("sam", deployArgs, opts);
+            if (deployResult.code !== 0) {
+                await gi.addressChannels(`:skull: Failed to deploy Lambda for ${p.id.url}`);
+            }
             // await gi.addressChannels("Update: " + JSON.stringify(update));
+            return deployResult;
         });
     });
 }

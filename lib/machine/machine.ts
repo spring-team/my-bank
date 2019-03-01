@@ -146,7 +146,7 @@ export function machineMaker(opts: Partial<CiMachineOptions> = {}): SoftwareDeli
         }
 
         sdm.withPushRules(
-            whenPushSatisfies(not(IsSdmEnabled)).setGoals(DoNotSetAnyGoalsAndLock),
+            // whenPushSatisfies(not(IsSdmEnabled)).setGoals(DoNotSetAnyGoalsAndLock),
 
             attachFacts<Interpreted>(async pu => {
                 const interpretation = await analyzer.interpret(pu.project, pu);

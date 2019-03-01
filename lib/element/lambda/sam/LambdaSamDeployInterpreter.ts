@@ -25,7 +25,7 @@ import {
 } from "@atomist/sdm-pack-analysis";
 import { LambdaStack } from "../LambdaStack";
 import { AwsCredentialsResolver } from "../support/lambdaPrimitives";
-import { lambdaSamDeployGoal } from "./lambdaSamDeployGoal";
+import { lambdaSamDeployGoal, LambdaSamDeployOptions } from "./lambdaSamDeployGoal";
 
 /**
  * Does deployment only
@@ -36,7 +36,7 @@ export class LambdaSamDeployInterpreter implements Interpreter {
 
     public setAnalyzer(analyzer: ProjectAnalyzer): void {
         // We need the analyzer to create this
-        this.deployGoal = lambdaSamDeployGoal();
+        this.deployGoal = lambdaSamDeployGoal(this.deployOptions);
     }
 
     public async enrich(interpretation: Interpretation, sdmContext: SdmContext): Promise<boolean> {
@@ -58,8 +58,10 @@ export class LambdaSamDeployInterpreter implements Interpreter {
         return true;
     }
 
-    public paths: string[] = [];
-
-    constructor(private readonly credResolver: AwsCredentialsResolver) {
+    constructor(private readonly credResolver: AwsCredentialsResolver,
+                private readonly deployOptions: LambdaSamDeployOptions = {
+                    uniqueName: "lambdaSamDeploy",
+                    bucketName: "com.atomist.hello",
+                }) {
     }
 }

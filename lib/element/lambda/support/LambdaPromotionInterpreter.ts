@@ -29,6 +29,7 @@ import {
     StagedDeployment,
 } from "../support/lambdaAliasGoal";
 import { AwsCredentialsResolver } from "../support/lambdaPrimitives";
+import { logger } from "@atomist/automation-client";
 
 /**
  * Adds promotion goals to an existing deployment
@@ -50,6 +51,10 @@ export class LambdaPromotionInterpreter implements Interpreter {
         if (!lambdaStack) {
             return false;
         }
+        if (!lambdaStack.functions.some(f => !!f.functionName)) {
+            logger.info("Lambda promotion not applicable as no function resource in this stack has a FunctionName");
+            return false;
+        }
 
         // Add promotion to interpretation if we find a deploy goal
         if (interpretation.deployGoals) {
@@ -66,9 +71,9 @@ export class LambdaPromotionInterpreter implements Interpreter {
 
     constructor(private readonly credResolver: AwsCredentialsResolver,
                 public readonly stages: StagedDeployment[] = [{
-            alias: "staging", approvalRequired: true,
+            alias: "staging", preApproval: true,
         }, {
-            alias: "production", approvalRequired: false,
+            alias: "production", preApproval: true,
         }],
     ) {
     }

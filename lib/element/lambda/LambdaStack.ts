@@ -3,7 +3,16 @@ import { TechnologyElement } from "@atomist/sdm-pack-analysis";
 import { Environment, FunctionName, Handler, Runtime } from "aws-sdk/clients/lambda";
 
 export interface FunctionInfo {
-    name: FunctionName;
+    /**
+     * Name of YAML resource block
+     */
+    declarationName: FunctionName;
+
+    /**
+     * FunctionName property.
+     */
+    functionName?: FunctionName;
+
     runtime: Runtime;
     handler: Handler;
     environment?: Environment;

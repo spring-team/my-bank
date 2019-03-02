@@ -89,6 +89,8 @@ import {
 import { IsSdmEnabled } from "../preference/pushTests";
 import { defaultAnalyzerFactory } from "./defaultAnalyzerFactory";
 import { DefaultNodeSeeds } from "./nodeSeeds";
+import { listFunctions } from "../element/lambda/support/lambdaPrimitives";
+import { defaultAwsCredentialsResolver, listFunctionsCommand } from "../element/lambda/lambdaCommands";
 
 /**
  * Type for creating analyzers
@@ -133,6 +135,8 @@ export function machineMaker(opts: Partial<CiMachineOptions> = {}): SoftwareDeli
             name: optsToUse.name,
             configuration,
         });
+
+        sdm.addCommand(listFunctionsCommand(defaultAwsCredentialsResolver));
 
         const analyzer = optsToUse.analyzerFactory(sdm);
 

@@ -16,7 +16,7 @@
 
 import {
     goal,
-    Goal,
+    Goal, slackInfoMessage,
 } from "@atomist/sdm";
 import { ProjectAnalyzer } from "@atomist/sdm-pack-analysis";
 import { LambdaStack } from "../LambdaStack";
@@ -26,6 +26,7 @@ import {
     deployedFunctionInfo,
     publishVersion,
 } from "./lambdaPrimitives";
+import { logger } from "@atomist/automation-client";
 
 export interface StagedDeployment {
     alias: string;
@@ -33,7 +34,7 @@ export interface StagedDeployment {
     /**
      * Whether to promote automatically
      */
-    approvalRequired: boolean;
+    preApproval: boolean;
 }
 
 /**
@@ -44,7 +45,7 @@ export function lambdaAliasGoal(credResolver: AwsCredentialsResolver,
                                 analyzer: ProjectAnalyzer): Goal {
     return goal({
         displayName: `Promote to ${stage.alias}`,
-        preApproval: stage.approvalRequired,
+        preApproval: stage.preApproval,
     }, async gi => {
         return gi.configuration.sdm.projectLoader.doWithProject({
             id: gi.id,
@@ -52,7 +53,6 @@ export function lambdaAliasGoal(credResolver: AwsCredentialsResolver,
             readOnly: true,
         }, async p => {
             const creds = await credResolver(gi);
-            // Find it
             const interpretation = await analyzer.interpret(p, gi);
             const lambda = interpretation.reason.analysis.elements.lambda as LambdaStack;
             if (!lambda) {
@@ -60,17 +60,21 @@ export function lambdaAliasGoal(credResolver: AwsCredentialsResolver,
             }
 
             for (const func of lambda.functions) {
-                const info = await deployedFunctionInfo(creds, func.name);
+                if (!func.functionName) {
+                    logger.info("Cannot promote function resource '%s' as it doesn't have a FunctionName", func.declarationName);
+                    continue;
+                }
+                const info = await deployedFunctionInfo(creds, func.functionName);
                 if (!info) {
                     throw new Error(`Can't find deployment info for lambda project: ${p.id.url}`);
                 }
-                const version = await publishVersion(await credResolver(gi), { FunctionName: func.name });
+                const version = await publishVersion(await credResolver(gi), { FunctionName: func.functionName });
                 const aliased = await createOrUpdateAlias(creds, {
-                    FunctionName: func.name,
+                    FunctionName: func.functionName,
                     FunctionVersion: version.Version,
                     Name: stage.alias,
                 });
-                await gi.addressChannels(`Promoted to \`${stage.alias}\`` + JSON.stringify(aliased));
+                await gi.addressChannels(slackInfoMessage(`Promoted to \`${stage.alias}\``, aliased.AliasArn));
             }
         });
     });

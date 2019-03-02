@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-import {
-    Goal,
-    SdmContext,
-} from "@atomist/sdm";
-import {
-    Interpretation,
-    Interpreter, ProjectAnalyzer,
-} from "@atomist/sdm-pack-analysis";
+import { Goal, SdmContext, } from "@atomist/sdm";
+import { Interpretation, Interpreter, ProjectAnalyzer, } from "@atomist/sdm-pack-analysis";
 import * as _ from "lodash";
 import { LambdaStack } from "../LambdaStack";
-import {
-    lambdaAliasGoal,
-    StagedDeployment,
-} from "../support/lambdaAliasGoal";
+import { lambdaAliasGoal, StagedDeployment, } from "../support/lambdaAliasGoal";
 import { AwsCredentialsResolver } from "../support/lambdaPrimitives";
 import { logger } from "@atomist/automation-client";
 
@@ -66,8 +57,6 @@ export class LambdaPromotionInterpreter implements Interpreter {
         }
         return true;
     }
-
-    public paths: string[] = [];
 
     constructor(private readonly credResolver: AwsCredentialsResolver,
                 public readonly stages: StagedDeployment[] = [{

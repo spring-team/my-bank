@@ -184,6 +184,20 @@ export async function listFunctions(creds: AwsCredentials,
     });
 }
 
+export async function invokeFunction(creds: AwsCredentials,
+                                     params: AWS.Lambda.Types.InvokeAsyncRequest): Promise<AWS.Lambda.Types.InvokeAsyncResponse> {
+    const lambda = new AWS.Lambda(creds);
+    return new Promise((resolve, reject) => {
+        lambda.invokeAsync(params, (err, data) => {
+            if (err) {
+                reject(err);
+            }
+            // logger.info(data);
+            resolve(data);
+        });
+    });
+}
+
 export async function deleteAlias(creds: AwsCredentials,
                                   params: AWS.Lambda.Types.DeleteAliasRequest): Promise<AWS.Lambda.Types.AliasConfiguration> {
     const lambda = new AWS.Lambda(creds);

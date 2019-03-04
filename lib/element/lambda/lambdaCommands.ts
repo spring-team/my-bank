@@ -30,7 +30,7 @@ import {
     AwsCredentials,
     AwsCredentialsResolver,
     createFunction,
-    deleteFunction,
+    deleteFunction, invokeFunction,
     listFunctions,
 } from "./support/lambdaPrimitives";
 
@@ -91,6 +91,44 @@ export function deleteLambda(credsResolver: AwsCredentialsResolver,
                 await i.addressChannels(`:error-circle: Could not delete lambda for project at ${p.id.url}: ${err.message}`);
                 logger.warn(err);
                 return undefined;
+            }
+        },
+    };
+}
+
+export interface ChooseFunctionParameters {
+    functionName: string;
+    qualifier?: string;
+}
+
+export function invokeFunctionCommand(credsResolver: AwsCredentialsResolver): CommandHandlerRegistration<ChooseFunctionParameters> {
+    return {
+        name: "invokeFunction",
+        intent: ["invoke lambda", "invoke function"],
+        parameters: {
+            // TODO put in pattern from AWS regexps
+            functionName: {},
+            qualifier: { required: false },
+        },
+        listener: async ci => {
+            const FunctionName = ci.parameters.functionName + (ci.parameters.qualifier ? `:${ci.parameters.qualifier}` : "");
+            try {
+                const res = await invokeFunction(await credsResolver(ci), {
+                    FunctionName,
+                    InvokeArgs: "{}",
+                });
+                // TODO handle response and display it in a snippet
+                if (res.Status >= 200 && res.Status < 300) {
+                    await ci.addressChannels(`:white_check_mark: Response was ${res.Status} from \`${FunctionName}\`. This is OK`);
+                } else {
+                    await ci.addressChannels(`:skull: Response was ${res.Status} from \`${FunctionName}\`. This is Not Good.`);
+                }
+            } catch (err) {
+                if (err.message.includes("Function not found")) {
+                    await ci.addressChannels(`:question: Function \`${FunctionName}\` not found`);
+                } else {
+                    await ci.addressChannels(`:skull: Unknown failure: ${err.message}`);
+                }
             }
         },
     };
